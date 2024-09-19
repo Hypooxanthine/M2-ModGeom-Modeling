@@ -13,7 +13,7 @@ Bezier::Bezier(uint32_t degreeU, uint32_t degreeV, uint32_t resolutionU, uint32_
 
 void Bezier::setControlPoint(uint32_t u, uint32_t v, const glm::vec3& p)
 {
-	m_ControlPoints.at(static_cast<size_t>(u * m_DegreeV + v)) = p;
+	m_ControlPoints.at(static_cast<size_t>(u * (m_DegreeV + 1) + v)) = p;
 	m_NeedsCompute = true;
 }
 
@@ -35,7 +35,7 @@ void Bezier::setResolution(uint32_t resolutionU, uint32_t resolutionV)
 
 const glm::vec3& Bezier::getControlPoint(uint32_t u, uint32_t v) const
 {
-	return m_ControlPoints.at(static_cast<size_t>(u * m_DegreeV + v));
+	return m_ControlPoints.at(static_cast<size_t>(u * (m_DegreeV + 1) + v));
 }
 
 const vrm::MeshData& Bezier::polygonize() const
@@ -55,11 +55,6 @@ void Bezier::computeMesh() const
 	indices.reserve(triangleCount * 3);
 	vertices.reserve(triangleCount * 3);
 
-	float minU = 0.f;
-	float maxU = 0.f;
-	float minV = 0.f;
-	float maxV = 0.f;
-
 	for (uint32_t sampleU = 0; sampleU < m_ResolutionU - 1; sampleU++)
 	{
 		for (uint32_t sampleV = 0; sampleV < m_ResolutionV - 1; sampleV++)
@@ -68,11 +63,6 @@ void Bezier::computeMesh() const
 			const float u1 = static_cast<float>(sampleU + 1) / static_cast<float>(m_ResolutionU);
 			const float v0 = static_cast<float>(sampleV) / static_cast<float>(m_ResolutionV);
 			const float v1 = static_cast<float>(sampleV + 1) / static_cast<float>(m_ResolutionV);
-
-			minU = glm::min(minU, u0);
-			maxU = glm::max(maxU, u1);
-			minV = glm::min(minV, v0);
-			maxV = glm::max(maxV, v1);
 
 			vrm::Vertex A;
 				A.position = computeBezier(u0, v0);
@@ -115,8 +105,6 @@ void Bezier::computeMesh() const
 			vertices.push_back(D);
 		}
 	}
-
-	VRM_LOG_INFO("Bezier bounds: u: [{}, {}], v: [{}, {}]", minU, maxU, minV, maxV);
 
 	m_PolygonizedCache = vrm::MeshData(std::move(vertices), std::move(indices));
 

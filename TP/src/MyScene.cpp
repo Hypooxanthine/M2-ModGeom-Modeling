@@ -14,10 +14,9 @@
 
 #include "imgui.h"
 
-#include "Bezier.h"
-
 MyScene::MyScene()
-    : vrm::Scene(), m_Camera(0.1f, 100.f, glm::radians(90.f), 600.f / 400.f, { 0.5f, 0.f, 20.f }, { 0.f, 0.f, 0.f })
+    : vrm::Scene(), m_Camera(0.1f, 100.f, glm::radians(90.f), 600.f / 400.f, { 0.5f, 10.f, 20.f }, { glm::radians(45.f), 0.f, 0.f }),
+    m_Bezier(m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV)
 {
     auto& gameLayer = vrm::Application::Get().getGameLayer();
 
@@ -70,14 +69,13 @@ void MyScene::onInit()
 
     auto meshEntity = createEntity("Mesh");
     meshEntity.addComponent<vrm::MeshComponent>(m_MeshAsset.createInstance());
-    meshEntity.getComponent<vrm::TransformComponent>().setScale({ 10.f, 10.f, 10.f });
 
     auto lightEntity = createEntity("Light");
     auto& c =  lightEntity.addComponent<vrm::PointLightComponent>();
     c.color = { 1.f, 1.f, 1.f };
-    c.intensity = 100.f;
-    c.radius = 100.f;
-    lightEntity.getComponent<vrm::TransformComponent>().setPosition({ 0.f, 10.f, 10.f });
+    c.intensity = 1000000.f;
+    c.radius = 2000.f;
+    lightEntity.getComponent<vrm::TransformComponent>().setPosition({ -5.f, 1000.f , -5.f });
 }
 
 void MyScene::onEnd()
@@ -126,20 +124,26 @@ void MyScene::onImGui()
 
     ImGui::Begin("Tweaks");
         ImGui::Checkbox("Real-time computing", &m_RealTimeComputing);
+        if (ImGui::Checkbox("Show control points", &m_ShowControlPoints))
+            updateControlPoints();
         ImGui::TextWrapped("Degrees");
-        if (ImGui::SliderInt2("##Degrees", m_BezierParams.degrees, 1, 100, "%d", ImGuiSliderFlags_Logarithmic) && m_RealTimeComputing)
+        if (ImGui::SliderInt2("##Degrees", m_BezierParams.degrees, 1, 20, "%d") && m_RealTimeComputing)
             computeBezier();
         ImGui::TextWrapped("Resolution");
         if (ImGui::SliderInt2("##Resolution", m_BezierParams.resolutions, 1, 10000, "%d", ImGuiSliderFlags_Logarithmic) && m_RealTimeComputing)
+            computeBezier();
+        ImGui::TextWrapped("Patch sizes");
+        if (ImGui::SliderFloat3("##Patch sizes", m_BezierParams.patchSizes, 1.f, 1000.f, "%.1f", ImGuiSliderFlags_Logarithmic) && m_RealTimeComputing)
             computeBezier();
         if (ImGui::Button("Compute Bezier"))
             computeBezier();
     ImGui::End();
 
     ImGui::Begin("Stats");
-        ImGui::Text("FPS: %.2f", ImGui::GetIO().Framerate);
-        ImGui::Text("Vertices: %u", m_MeshAsset.getSubMeshes().back().meshData.getVertexCount());
-        ImGui::Text("Triangles: %u", m_MeshAsset.getSubMeshes().back().meshData.getTriangleCount());
+        ImGui::TextWrapped("FPS: %.2f", ImGui::GetIO().Framerate);
+        ImGui::TextWrapped("Vertices: %u", m_MeshAsset.getSubMeshes().back().meshData.getVertexCount());
+        ImGui::TextWrapped("Triangles: %u", m_MeshAsset.getSubMeshes().back().meshData.getTriangleCount());
+        ImGui::TextWrapped("Last compute time: %.3f s", m_LastComputeTimeSeconds);
     ImGui::End();
 }
 
@@ -147,20 +151,59 @@ void MyScene::computeBezier()
 {
     VRM_LOG_INFO("Computing Bezier with params: degrees: ({}, {}), resolutions: ({}, {})", m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV);
 
-    Bezier b(m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV);
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    m_Bezier = Bezier(m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV);
     
-    for (uint32_t u = 0; u < static_cast<uint32_t>(m_BezierParams.degreeU); u++)
+    for (uint32_t u = 0; u < static_cast<uint32_t>(m_BezierParams.degreeU + 1); u++)
     {
-        for (uint32_t v = 0; v < static_cast<uint32_t>(m_BezierParams.degreeV); v++)
+        for (uint32_t v = 0; v < static_cast<uint32_t>(m_BezierParams.degreeV + 1); v++)
         {
             glm::vec3 p;
-            p.x = static_cast<float>(u);
-            p.y = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) / 2.f;
-            p.z = static_cast<float>(v);
-            b.setControlPoint(u, v, p);
+            p.x = static_cast<float>(u) / static_cast<float>(m_BezierParams.degreeU + 1);
+            p.y = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+            p.z = static_cast<float>(v) / static_cast<float>(m_BezierParams.degreeV + 1);
+
+            p.x = p.x * (m_BezierParams.degreeU + 1) / m_BezierParams.degreeU * m_BezierParams.patchSizeU;
+            p.y = p.y * m_BezierParams.patchVerticalSpread;
+            p.z = p.z * (m_BezierParams.degreeV + 1) / m_BezierParams.degreeV * m_BezierParams.patchSizeV;
+
+            //VRM_LOG_INFO("Control point ({}, {}) = ({}, {}, {})", u, v, p.x, p.y, p.z);
+
+            m_Bezier.setControlPoint(u, v, p);
         }
     }
 
     m_MeshAsset.clear();
-    m_MeshAsset.addSubmesh(b.polygonize());
+    m_MeshAsset.addSubmesh(m_Bezier.polygonize());
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    m_LastComputeTimeSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() / 1000.f;
+
+    updateControlPoints();
+}
+
+void MyScene::updateControlPoints()
+{
+    for (const auto& e : m_ControlPoints)
+    {
+        destroyEntity(e);
+    }
+
+    m_ControlPoints.clear();
+
+    if (!m_ShowControlPoints)
+        return;
+
+    for (uint32_t u = 0; u < static_cast<uint32_t>(m_BezierParams.degreeU + 1); u++)
+    {
+        for (uint32_t v = 0; v < static_cast<uint32_t>(m_BezierParams.degreeV + 1); v++)
+        {
+            auto e = createEntity(std::string("ControlPoint_") + std::to_string(u) + "_" + std::to_string(v));
+            e.getComponent<vrm::TransformComponent>().setPosition(m_Bezier.getControlPoint(u, v));
+            e.getComponent<vrm::TransformComponent>().setScale({ 0.03f, 0.03f, 0.03f });
+            e.addComponent<vrm::MeshComponent>(vrm::AssetManager::Get().getAsset<vrm::MeshAsset>("Resources/Meshes/ControlPoint.obj"));
+            m_ControlPoints.push_back(e);
+        }
+    }
 }

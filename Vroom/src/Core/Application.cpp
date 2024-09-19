@@ -24,7 +24,7 @@ Application::Application(int argc, char** argv)
 
     VRM_ASSERT(initGLFW());
     m_Window = std::make_unique<Window>();
-    VRM_ASSERT(m_Window->create("Vroom engine", 800, 600));
+    VRM_ASSERT(m_Window->create("Modelisation Geometrique", 800, 600));
 
     glewExperimental = GL_TRUE;
     VRM_ASSERT(glewInit() == GLEW_OK);

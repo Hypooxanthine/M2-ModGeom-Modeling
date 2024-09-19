@@ -6,7 +6,10 @@
 
 #include <glm/gtc/constants.hpp>
 
+#include <vector>
+
 #include "imgui.h"
+#include "Bezier.h"
 
 class MyScene : public vrm::Scene
 {
@@ -25,6 +28,7 @@ protected:
 
 private:
 	void computeBezier();
+	void updateControlPoints();
 
 	void onImGui();
 
@@ -52,6 +56,18 @@ private:
 				int resolutionV;
 			};
 		};
+
+		union
+		{
+			float patchSizes[3] = { 10.f, 2.f, 10.f };
+
+			struct
+			{		
+				float patchSizeU;
+				float patchVerticalSpread;
+				float patchSizeV;
+			};
+		};
 	};
 
 private:
@@ -64,8 +80,13 @@ private:
 	ImFont* m_Font = nullptr;
 
 	bool m_ControlsEnabled = true;
-	bool m_RealTimeComputing = false;
+	bool m_RealTimeComputing = true;
+	bool m_ShowControlPoints = true;
 
 	vrm::MeshAsset m_MeshAsset;
+	Bezier m_Bezier;
 	BezierParams m_BezierParams;
+	float m_LastComputeTimeSeconds = 0.f;
+
+	std::vector<vrm::Entity> m_ControlPoints;
 };
