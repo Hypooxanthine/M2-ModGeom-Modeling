@@ -64,4 +64,4 @@ docs/*
 !dependencies/
 !dependencies/**
 !Resources/**
-!Sandbox/Resources/**
+!TP/Resources/**
