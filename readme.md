@@ -50,3 +50,8 @@ You can also build the project by opening the root folder on VS Code, and use th
 ```bash
 sudo apt install ninja-build
 ```
+
+## Dependencies
+
+- [Vroom](https://github.com/Hypooxanthine/Vroom), my 3D library written in C++/OpenGL (I modified it a bit to fit the needs of this project)
+- [imgui](https://github.com/ocornut/imgui), for the GUI
