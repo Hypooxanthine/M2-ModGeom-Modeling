@@ -148,7 +148,7 @@ float Bezier::Bernstein(uint32_t n, uint32_t k, float t)
 {
 	return static_cast<float>(
 		Binomial(n, k))
-		* std::powf(t, static_cast<float>(k))
-		* std::powf((1.f - t), static_cast<float>(n - k)
+		* powf(t, static_cast<float>(k))
+		* powf((1.f - t), static_cast<float>(n - k)
 	);
 }
