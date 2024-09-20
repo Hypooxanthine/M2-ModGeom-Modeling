@@ -30,6 +30,8 @@ private:
 	void computeBezier();
 	void updateControlPoints();
 
+	void profile();
+
 	void onImGui();
 
 private:

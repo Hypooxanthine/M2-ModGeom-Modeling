@@ -137,20 +137,20 @@ void MyScene::onImGui()
             computeBezier();
         if (ImGui::Button("Compute Bezier"))
             computeBezier();
+        if (ImGui::Button("Begin profiling session"))
+            profile();
     ImGui::End();
 
     ImGui::Begin("Stats");
         ImGui::TextWrapped("FPS: %.2f", ImGui::GetIO().Framerate);
-        ImGui::TextWrapped("Vertices: %u", m_MeshAsset.getSubMeshes().back().meshData.getVertexCount());
-        ImGui::TextWrapped("Triangles: %u", m_MeshAsset.getSubMeshes().back().meshData.getTriangleCount());
+        ImGui::TextWrapped("Vertices: %lu", m_MeshAsset.getSubMeshes().back().meshData.getVertexCount());
+        ImGui::TextWrapped("Triangles: %lu", m_MeshAsset.getSubMeshes().back().meshData.getTriangleCount());
         ImGui::TextWrapped("Last compute time: %.3f s", m_LastComputeTimeSeconds);
     ImGui::End();
 }
 
 void MyScene::computeBezier()
 {
-    VRM_LOG_INFO("Computing Bezier with params: degrees: ({}, {}), resolutions: ({}, {})", m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV);
-
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     m_Bezier = Bezier(m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV);
@@ -178,7 +178,9 @@ void MyScene::computeBezier()
     m_MeshAsset.addSubmesh(m_Bezier.polygonize());
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    m_LastComputeTimeSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() / 1000.f;
+    m_LastComputeTimeSeconds = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1'000'000.f;
+
+    VRM_LOG_TRACE("Degrees : ({}, {}), Resolutions: ({}, {}) -> {}s", m_BezierParams.degreeU, m_BezierParams.degreeV, m_BezierParams.resolutionU, m_BezierParams.resolutionV, m_LastComputeTimeSeconds);
 
     updateControlPoints();
 }
@@ -206,4 +208,46 @@ void MyScene::updateControlPoints()
             m_ControlPoints.push_back(e);
         }
     }
+}
+
+void MyScene::profile()
+{
+    VRM_LOG_INFO("Beginning profiling session");
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    const std::vector<uint32_t> degrees = {
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    };
+
+    const std::vector<uint32_t> resolutions = {
+        1, 10, 100, 1000
+    };
+
+    for (auto degree : degrees)
+    {
+
+        // First caching Bezier computations
+        VRM_LOG_TRACE("Caching Bezier computations");
+        m_BezierParams.degreeU = degree;
+        m_BezierParams.degreeV = degree;
+        m_BezierParams.resolutionU = 1;
+        m_BezierParams.resolutionV = 1;
+        computeBezier();
+
+        for (auto res : resolutions)
+        {
+            m_BezierParams.degreeU = degree;
+            m_BezierParams.degreeV = degree;
+            m_BezierParams.resolutionU = res;
+            m_BezierParams.resolutionV = res;
+
+            computeBezier();
+        }
+    }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    float durationSeconds = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1'000'000.f;
+
+    VRM_LOG_INFO("Profiling session ended in {}s", durationSeconds);
 }

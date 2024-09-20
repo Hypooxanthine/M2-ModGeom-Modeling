@@ -1,0 +1,1 @@
+Degree U and V | Resolution U and V | Compute Time
