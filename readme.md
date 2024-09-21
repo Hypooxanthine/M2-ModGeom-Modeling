@@ -1,5 +1,13 @@
 # TP de Modélisation Géométrique
 
+Modelisation of Bézier surfaces with real-time settings edition and displaying results as meshes.
+
+## Screenshots
+
+![Screenshot degrees 2x2 and resolution 200x200](extractedData/screenshots/2x2%20-%20200x200.png)
+![Screenshot degrees 10x10 and resolution 200x200](extractedData/screenshots/10x10%20-%20200x200.png)
+![Screenshot HUD](extractedData/screenshots/HUD.png)
+
 ## Building project
 
 ### Windows
