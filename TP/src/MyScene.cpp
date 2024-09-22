@@ -73,9 +73,9 @@ void MyScene::onInit()
     auto lightEntity = createEntity("Light");
     auto& c =  lightEntity.addComponent<vrm::PointLightComponent>();
     c.color = { 1.f, 1.f, 1.f };
-    c.intensity = 1000000.f;
+    c.intensity = 5000.f;
     c.radius = 2000.f;
-    lightEntity.getComponent<vrm::TransformComponent>().setPosition({ -5.f, 1000.f , -5.f });
+    lightEntity.getComponent<vrm::TransformComponent>().setPosition({ -5.f, 100.f , -5.f });
 }
 
 void MyScene::onEnd()

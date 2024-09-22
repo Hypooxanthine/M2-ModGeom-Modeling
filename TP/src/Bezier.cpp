@@ -73,12 +73,12 @@ void Bezier::computeMesh() const
 			vrm::Vertex D;
 				D.position = computeBezier(u0, v1);
 
-			glm::vec3 AC = C.position - A.position;
-			glm::vec3 AD = D.position - A.position;
-			glm::vec3 AB = B.position - A.position;
+			const glm::vec3 AC = C.position - A.position;
+			const glm::vec3 AD = D.position - A.position;
+			const glm::vec3 AB = B.position - A.position;
 			
-			glm::vec3 normal0 = glm::normalize(glm::cross(AB, AC));
-			glm::vec3 normal1 = glm::normalize(glm::cross(AC, AD));
+			const glm::vec3 normal0 = glm::normalize(glm::cross(AB, AC));
+			const glm::vec3 normal1 = glm::normalize(glm::cross(AC, AD));
 
 			A.normal = normal0;
 			B.normal = normal0;
