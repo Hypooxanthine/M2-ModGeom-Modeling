@@ -25,7 +25,7 @@ FetchContent_MakeAvailable(glm)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG        v1.x
+    GIT_TAG        b6da59447f165ad70a4e3ca1c575b14ea66d92c9
 )
 FetchContent_MakeAvailable(spdlog)
 
